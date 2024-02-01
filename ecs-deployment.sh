@@ -20,10 +20,18 @@ for TASK_DEF in "${TASK_DEFINITIONS[@]}"; do
     --service $ECS_SERVICE_NAME \
     --task-definition $TASK_DEF
 
-  # Tag ECS tasks with the commit hash
+  # Get the full ARN of the ECS service
+  ECS_SERVICE_ARN=$(aws ecs describe-services \
+    --region $REGION \
+    --cluster $ECS_CLUSTER_NAME \
+    --services $ECS_SERVICE_NAME \
+    --query 'services[0].serviceArn' \
+    --output text)
+
+  # Tag ECS tasks with the commit hash using the long ARN format
   aws ecs tag-resource \
     --region $REGION \
-    --resource-arn arn:aws:ecs:$REGION:$ACCOUNT_ID:service/$ECS_SERVICE_NAME \
+    --resource-arn $ECS_SERVICE_ARN \
     --tags key=CommitHash,value=$COMMIT_HASH
 done
 
