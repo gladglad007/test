@@ -1,0 +1,96 @@
+name: ECS and AppMesh Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v2
+
+  #     - name: Set up Terraform
+  #       uses: hashicorp/setup-terraform@v1
+  #       with:
+  #         terraform_version: 1.1.0
+
+  #     - name: Initialize Terraform
+  #       run: terraform init
+
+  #     - name: Deploy ECS and AppMesh
+  #       run: terraform apply -auto-approve
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS CLI
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ap-northeast-1
+
+      - name: Login to AWS ECR
+        run: |
+          docker login --username AWS --password "$(aws ecr get-login-password --region ap-northeast-1)" 026550735179.dkr.ecr.ap-northeast-1.amazonaws.com
+          #aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 026550735179.dkr.ecr.ap-northeast-1.amazonaws.com
+          #  aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 026550735179.dkr.ecr.ap-northeast-1.amazonaws.com
+          #aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 026550735179.dkr.ecr.your-aws-region.amazonaws.com
+
+      - name: Build and Push Docker Image
+        run: |
+
+          docker build -t hello-world .
+          docker tag hello-world:latest 026550735179.dkr.ecr.ap-northeast-1.amazonaws.com/hello-world:latest
+          docker push 026550735179.dkr.ecr.ap-northeast-1.amazonaws.com/hello-world:latest
+          #docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/your-ecr-repo:latest
+          #docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/your-ecr-repo:latest
+
+  deploy-to-ecs:
+    needs: [build-and-deploy]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to ECS
+        run: |
+          chmod +x ./ecs-deployment.sh
+          ./ecs-deployment.sh ${{ secrets.AWS_REGION }} ${{ secrets.AWS_ACCOUNT_ID }} ${{ secrets.AWS_ACCESS_KEY_ID }} ${{ secrets.AWS_SECRET_ACCESS_KEY }} ${{ secrets.COMMIT_HASH }} ${{ needs.build-and-deploy.outputs.ecs_service_arn }}
+
+  appmesh-canary-deployment:
+    needs: [deploy-to-ecs]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Execute App Mesh Canary Deployment Script
+        run: |
+          chmod +x ./appmesh-canary-deployment.sh
+          ./appmesh-canary-deployment.sh ${{ needs.build-and-deploy.outputs.appmesh_mesh_name }} ${{ needs.build-and-deploy.outputs.appmesh_virtual_router_name }}
+
