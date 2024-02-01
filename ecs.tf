@@ -8,13 +8,13 @@ variable "nginx_image" {
 variable "ecr_repository_uri_for_example1" {
   description = "ECR repository URI for example1"
   type        = string
-  default     = "026550735179.dkr.ecr.ap-northeast-1.amazonaws.com/hello-world"  # Replace with the actual ECR URI for example1
+  default     = "026550735179.dkr.ecr.ap-northeast-1.amazonaws.com/hello-world" # Replace with the actual ECR URI for example1
 }
 
 variable "ecr_repository_uri_for_example2" {
   description = "ECR repository URI for example2"
   type        = string
-  default     = "026550735179.dkr.ecr.ap-northeast-1.amazonaws.com/hello-world"  # Replace with the actual ECR URI for example2
+  default     = "026550735179.dkr.ecr.ap-northeast-1.amazonaws.com/hello-world" # Replace with the actual ECR URI for example2
 }
 
 # ... (previous code)
@@ -54,7 +54,7 @@ resource "aws_ecs_task_definition" "examplegw" {
   requires_compatibilities = ["FARGATE"]
   task_role_arn            = module.ecs_task_role.iam_role_arn
   execution_role_arn       = module.ecs_task_execution_role.iam_role_arn
-  container_definitions    = jsonencode([{
+  container_definitions = jsonencode([{
     name  = "nginx-container"
     image = var.nginx_image
     portMappings = [
@@ -102,7 +102,7 @@ resource "aws_ecs_task_definition" "example1" {
   requires_compatibilities = ["FARGATE"]
   task_role_arn            = module.ecs_task_role.iam_role_arn
   execution_role_arn       = module.ecs_task_execution_role.iam_role_arn
-  container_definitions    = jsonencode([{
+  container_definitions = jsonencode([{
     name  = "nginx-container"
     image = "${var.ecr_repository_uri_for_example1}:latest"
     portMappings = [
@@ -150,7 +150,7 @@ resource "aws_ecs_task_definition" "example2" {
   requires_compatibilities = ["FARGATE"]
   task_role_arn            = module.ecs_task_role.iam_role_arn
   execution_role_arn       = module.ecs_task_execution_role.iam_role_arn
-  container_definitions    = jsonencode([{
+  container_definitions = jsonencode([{
     name  = "nginx-container"
     image = "${var.ecr_repository_uri_for_example2}:latest"
     portMappings = [
@@ -381,7 +381,7 @@ resource "aws_appmesh_virtual_node" "example_backend" {
     service_discovery {
       aws_cloud_map {
         namespace_name = aws_service_discovery_private_dns_namespace.example.name
-        service_name   = "example-backend"  # Update with the correct service name
+        service_name   = "example-backend" # Update with the correct service name
       }
     }
 
