@@ -75,7 +75,7 @@ else
     # Check metrics (example: error rate)
     log "Checking metrics (error rate)"
     error_rate=$(aws cloudwatch get-metric-statistics --region $AWS_REGION \
-      --namespace AWS/AppMesh \
+     # --namespace AWS/AppMesh \
       --metric-name 4xxError \
       --start-time $(date -u +%Y-%m-%dT%H:%M:%SZ --date '-5 minutes') \
       --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
