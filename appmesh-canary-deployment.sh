@@ -36,8 +36,8 @@ log "Checking metrics (error rate)"
 error_rate=$(aws cloudwatch get-metric-statistics --region $AWS_REGION \
   --namespace AWS/AppMesh \
   --metric-name 4xxError \
-  --start-time $(date -u +%Y-%m-%dT%H:%M:%SZ --date '-5 minutes') \
-  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --start-time "$(date -u +%Y-%m-%dT%H:%M:%SZ --date '-5 minutes')" \
+  --end-time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --period 300 \
   --statistics Sum \
   --dimensions Name=Route,Value=$ROUTE_NAME Name=Mesh,Value=$APPMESH_NAME Name=VirtualRouter,Value=$VIRTUAL_ROUTER_NAME | jq -r '.Datapoints[0].Sum')
